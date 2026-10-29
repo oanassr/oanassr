@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "voicestudio": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "voicestudio-mcp"
+      ],
+      "env": {}
+    }
+  }
+}
