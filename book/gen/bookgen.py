@@ -22,6 +22,7 @@ from pypdf import PdfReader
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from docgen import DocBuilder, W_NS, _runs, TEAL, AMBER, CREAM, GREY  # noqa: E402
 from textutil import ORD  # noqa: E402
+from normalize import normalize_document  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
@@ -232,6 +233,7 @@ def clean_chapter(d):
     for tag in ("commentRangeStart", "commentRangeEnd", "commentReference"):
         for el in body.iter(W + tag):
             el.getparent().remove(el)
+    normalize_document(d)
     title = d.paragraphs[1]._p
     ppr = title.get_or_add_pPr()
     ppr.insert(0, parse_xml(f'<w:pStyle {W_NS} w:val="BookChapter"/>'))
@@ -277,6 +279,7 @@ def assemble(path, titles, toc_pages, terms, refs):
             comp.append(d)
     appendices(comp.doc, terms, refs)
     s = comp.doc.settings.element
+    normalize_document(comp.doc)
     comp.doc.core_properties.title = "إدارة اتخاذ القرار على أساس البيانات"
     comp.doc.core_properties.author = "د. عثمان نصر"
     comp.save(path)
@@ -313,8 +316,20 @@ def outline_pages(pdf_path, titles):
     return found, len(r.pages)
 
 
+def export_chapters_1_9():
+    """Write typographically normalized copies of chapters 1-9 next to chapters 10-13."""
+    dst = os.path.join(ROOT, "out", "chapter")
+    os.makedirs(dst, exist_ok=True)
+    for n in range(1, 10):
+        d = docx.Document(chapter_path(n))
+        normalize_document(d)
+        d.core_properties.author = "د. عثمان نصر"
+        d.save(os.path.join(dst, f"Ch{n:02d}_Book.docx"))
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
+    export_chapters_1_9()
     titles = chapter_titles()
     terms, refs = collect_terms_refs()
     path = os.path.join(OUT, "Data_Driven_Decision_Making_Book.docx")

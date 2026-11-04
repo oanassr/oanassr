@@ -1,0 +1,66 @@
+<html><head><meta charset="utf-8"><style>
+@font-face{font-family:Reem;src:url(file:///root/.fonts/ReemKufi-Bold.ttf)}
+@font-face{font-family:CairoL;src:url(file:///root/.fonts/Cairo-Light.ttf)}
+@font-face{font-family:CairoB;src:url(file:///root/.fonts/Cairo-Bold.ttf)}
+html,body{margin:0}
+.c{width:2480px;height:3508px;position:relative;overflow:hidden;direction:rtl;
+   background:linear-gradient(165deg,#0B2530 0%,#0F4C5C 58%,#13606F 100%)}
+canvas{position:absolute;inset:0}
+.top{position:absolute;right:230px;left:230px;top:300px}
+.k{font-family:CairoB;font-size:58px;color:#E09F3E;letter-spacing:6px}
+.t{font-family:Reem;font-size:250px;line-height:1.12;color:#FFFFFF;margin-top:50px}
+.t span{color:#F2C46D}
+.e{font-family:CairoL;font-size:86px;color:#CFE3E4;margin-top:56px;direction:ltr;text-align:right;letter-spacing:1px}
+.bottom{position:absolute;right:230px;left:230px;bottom:230px;display:flex;justify-content:space-between;align-items:flex-end}
+.a{font-family:CairoB;font-size:96px;color:#FFFFFF}
+.ed{font-family:CairoL;font-size:52px;color:#9FC3C3;margin-top:10px}
+.mark{font-family:CairoL;font-size:52px;color:#9FC3C3;text-align:left;direction:ltr}
+.rule{position:absolute;right:230px;width:520px;height:8px;background:#E09F3E;top:1360px}
+</style></head><body><div class="c"><canvas id="cv" width="2480" height="3508"></canvas>
+<div class="top"><div class="k">كتاب المقرر</div>
+<div class="t">إدارة اتخاذ القرار<br><span>على أساس البيانات</span></div>
+<div class="e">Data-Driven Decision Making</div></div>
+<div class="rule"></div>
+<div class="bottom"><div><div class="a">د. عثمان نصر</div><div class="ed">الطبعة الأولى · 1448هـ / 2026م</div></div>
+<div class="mark">from data<br>to decision</div></div>
+</div>
+<script>
+document.fonts.load('84px CairoB').then(draw);
+function draw(){
+// Generative motif: scattered data points (left) are drawn along six streams through six
+// numbered steps into one decision point (right).
+const cv=document.getElementById('cv'),x=cv.getContext('2d');
+let s=7;const R=()=>(s=(s*16807)%2147483647)/2147483647;
+const steps=[[560,2320],[880,2140],[1180,2330],[1480,2150],[1780,2340],[2040,2190]];
+const D=[2160,2700];               // decision point
+// path through the steps, ending at the decision
+const path=[[180,2600],...steps,D];
+function pt(t){ // Catmull-Rom along path
+  const n=path.length-1,i=Math.min(n-1,Math.floor(t*n)),u=t*n-i;
+  const p0=path[Math.max(0,i-1)],p1=path[i],p2=path[i+1],p3=path[Math.min(n,i+2)];
+  const f=(a,b,c,d)=>0.5*((2*b)+(-a+c)*u+(2*a-5*b+4*c-d)*u*u+(-a+3*b-3*c+d)*u*u*u);
+  return [f(p0[0],p1[0],p2[0],p3[0]),f(p0[1],p1[1],p2[1],p3[1])];}
+// scattered data cloud
+const G=()=>{let u=0,v=0;while(!u)u=R();while(!v)v=R();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+for(let i=0;i<2200;i++){const px=600+G()*360,py=2420+G()*430,r=2.5+R()*8;
+  const d=Math.hypot((px-600)/360,(py-2420)/430);x.globalAlpha=Math.max(0,.6-d*.2);
+  x.fillStyle=R()<.12?'#E09F3E':'#7FB7BD';x.beginPath();x.arc(px,py,r,0,7);x.fill();}
+// streams: many thin curves converging into the main path
+for(let k=0;k<70;k++){const off=(R()-.5)*700,start=[600+G()*330,2420+G()*400];
+  x.globalAlpha=.18;x.strokeStyle=k%9==0?'#E09F3E':'#9FD0D3';x.lineWidth=2+R()*3;x.beginPath();x.moveTo(...start);
+  for(let t=0;t<=1.0001;t+=.01){const [px,py]=pt(t),w=Math.pow(1-t,2.2);x.lineTo(px+w*(start[0]-px)+w*off*.2,py+w*(start[1]-py));}
+  x.stroke();}
+// main path
+x.globalAlpha=1;x.strokeStyle='#E09F3E';x.lineWidth=14;x.lineCap='round';x.beginPath();
+for(let t=0;t<=1.0001;t+=.005){const [px,py]=pt(t);t==0?x.moveTo(px,py):x.lineTo(px,py);}x.stroke();
+// step nodes
+const cols=['#2C7A7B','#2C7A7B','#3D5A80','#B5532A','#6B4E71','#E09F3E'];
+steps.forEach((p,i)=>{x.fillStyle='#0B2530';x.beginPath();x.arc(p[0],p[1],78,0,7);x.fill();
+  x.lineWidth=12;x.strokeStyle=cols[i];x.stroke();x.fillStyle='#FFFFFF';x.font='bold 84px CairoB';x.textAlign='center';x.textBaseline='middle';x.fillText(String(i+1),p[0],p[1]+6);});
+// decision point glow
+const g=x.createRadialGradient(D[0],D[1],10,D[0],D[1],330);g.addColorStop(0,'rgba(242,196,109,.95)');g.addColorStop(.35,'rgba(224,159,62,.45)');g.addColorStop(1,'rgba(224,159,62,0)');
+x.fillStyle=g;x.beginPath();x.arc(D[0],D[1],330,0,7);x.fill();
+x.fillStyle='#FFF4DD';x.beginPath();x.arc(D[0],D[1],70,0,7);x.fill();
+x.strokeStyle='#0B2530';x.lineWidth=16;x.beginPath();x.moveTo(D[0]-30,D[1]);x.lineTo(D[0]-6,D[1]+26);x.lineTo(D[0]+34,D[1]-24);x.stroke();
+document.body.dataset.ready='1';}
+</script></body></html>

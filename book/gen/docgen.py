@@ -167,6 +167,8 @@ class DocBuilder:
     def save(self, path):
         self.doc.core_properties.title = f"الفصل {self.ch['num']}: {self.ch['title']}"
         self.doc.core_properties.author = "د. عثمان نصر"
+        from normalize import normalize_document
+        normalize_document(self.doc)
         self.doc.save(path)
 
 
