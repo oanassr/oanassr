@@ -166,7 +166,7 @@ class DocBuilder:
 
     def save(self, path):
         self.doc.core_properties.title = f"الفصل {self.ch['num']}: {self.ch['title']}"
-        self.doc.core_properties.author = "إدارة اتخاذ القرار على أساس البيانات – MIS6004"
+        self.doc.core_properties.author = "د. عثمان نصر"
         self.doc.save(path)
 
 
