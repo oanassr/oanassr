@@ -377,3 +377,32 @@ def build_deck(ch, out_path, img_dir):
     d.summary()
     d.references()
     d.save(out_path)
+    compress_background(out_path)
+
+
+def compress_background(path, quality=90):
+    """Re-encode the template's 2 MB PNG cover background as JPEG (same resolution)."""
+    import io
+    import re
+    import zipfile
+    from PIL import Image
+    src = zipfile.ZipFile(path)
+    items = {n: src.read(n) for n in src.namelist()}
+    src.close()
+    old = "ppt/media/DARK-image-1.png"
+    if old not in items:
+        return
+    buf = io.BytesIO()
+    Image.open(io.BytesIO(items.pop(old))).convert("RGB").save(buf, "JPEG", quality=quality, optimize=True)
+    items["ppt/media/DARK-image-1.jpeg"] = buf.getvalue()
+    for n in list(items):
+        if n.endswith(".rels"):
+            items[n] = items[n].replace(b"DARK-image-1.png", b"DARK-image-1.jpeg")
+    ct = items["[Content_Types].xml"].decode()
+    if 'Extension="jpeg"' not in ct:
+        ct = ct.replace("<Default ", '<Default Extension="jpeg" ContentType="image/jpeg"/><Default ', 1)
+    items["[Content_Types].xml"] = ct.encode()
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", items.pop("[Content_Types].xml"))
+        for n, data in items.items():
+            z.writestr(n, data)
