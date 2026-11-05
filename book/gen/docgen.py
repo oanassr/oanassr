@@ -189,6 +189,34 @@ def block_to_doc(b, blk):
         raise ValueError(kind)
 
 
+def body_to_doc(b, body):
+    """Render an ordered section body (used by chapters converted from the earlier generator)."""
+    for e in body:
+        k = e[0]
+        if k == "para":
+            b.para(e[1])
+        elif k == "table":
+            b.table(e[1], e[2], e[3] if len(e) > 3 else None)
+        elif k == "label":
+            b.label(e[1])
+        elif k == "list":
+            b.items(e[1], numbered=(e[2] != "bullet"))
+        elif k == "callout":
+            b.callout(e[1])
+        elif k == "ex":
+            b.lead_para("مثال محلول: ", e[1])
+        elif k == "teal":
+            b.teal_line(e[1])
+        elif k == "small":
+            b.small(e[1])
+        elif k in ("bold", "ref"):
+            b.small(e[1], color=None, size=26 if k == "bold" else 21, bold=True)
+        elif k == "task":
+            b.para(e[1], size=23)
+        else:
+            raise ValueError(e)
+
+
 def build_doc(ch, out_path, img_dir):
     b = DocBuilder(ch)
     n = ch["num"]
@@ -219,6 +247,9 @@ def build_doc(ch, out_path, img_dir):
             ax = ch["axes"][current_axis]
             b.h1(f"المحور {ax['letter']}: {ax['name']} ({ax['en']})")
         b.h2(f"{n}.{i} {s['t']}")
+        if "body" in s:
+            body_to_doc(b, s["body"])
+            continue
         for t in s["p"]:
             b.para(t)
         if s.get("blk"):
