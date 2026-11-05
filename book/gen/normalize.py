@@ -62,6 +62,10 @@ def fix_paragraph(p, in_table=False):
         return
     if len(text) < 90 and sval != "ListParagraph":
         return  # short labels and one-line items stay start-aligned
+    # LibreOffice can loop forever laying out a justified bidi line that holds several separate
+    # number runs (e.g. "50% ... 20% ... 20%"); such paragraphs stay start-aligned.
+    if sum(1 for r in runs if _is_latin_run(r)) >= 3 and len(text) < 400:
+        return
     if jc is None:
         jc = parse_xml(f'<w:jc {W_NS} w:val="both"/>')
         ppr.append(jc)
