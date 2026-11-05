@@ -8,6 +8,7 @@ from docx.oxml import parse_xml
 from docx.shared import Inches
 
 from textutil import split_runs, ORD
+from textterms import dedupe_english, walk as walk_terms
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "..", "templates", "Ch09_Book.docx")
@@ -322,6 +323,7 @@ def section_to_doc(b, s):
 
 
 def build_doc(ch, out_path, img_dir):
+    ch = dedupe_english(walk_terms(ch))
     b = DocBuilder(ch)
     n = ch["num"]
     b.kicker(f"الفصل {ORD[n]}")
@@ -337,7 +339,7 @@ def build_doc(ch, out_path, img_dir):
 
     b.h1("مخرجات التعلم")
     b.para("بعد دراسة هذا الفصل يستطيع الطالب أن:", keep=True)
-    b.items([f"{ar} ({en}): {txt}" for ar, en, txt in ch["outcomes"]])
+    b.items([f"{ar}: {txt}" for ar, en, txt in ch["outcomes"]])
     if ch.get("advanced", {}).get("outcome"):
         b.lead_para("مخرج إضافي للدكتوراه: ", ch["advanced"]["outcome"], lead_color="6B4E71")
     b.table(["المخرج", "مجال إطار المؤهلات الوطني"],
@@ -354,7 +356,7 @@ def build_doc(ch, out_path, img_dir):
         if s["axis"] != current_axis:
             current_axis = s["axis"]
             ax = ch["axes"][current_axis]
-            b.h1(f"المحور {ax['letter']}: {ax['name']} ({ax['en']})")
+            b.h1(f"المحور {ax['letter']}: {ax['name']}")
         b.h2(f"{n}.{i} {s['t']}", optional=s.get("opt", False))
         section_to_doc(b, s)
 
@@ -369,7 +371,7 @@ def build_doc(ch, out_path, img_dir):
 
     b.h1("حالة للنقاش ومهمة بحثية")
     b.items(ch["discussion"])
-    b.h2("مهمة بحثية قصيرة (Mini Research Task)")
+    b.h2("مهمة بحثية قصيرة")
     b.para(ch["task"], size=23)
 
     b.h1("خلاصة الفصل")
