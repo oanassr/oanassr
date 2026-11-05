@@ -21,11 +21,17 @@ def build(num):
     os.makedirs(os.path.join(OUT, "slides"), exist_ok=True)
     os.makedirs(os.path.join(OUT, "excel"), exist_ok=True)
     build_doc(ch, os.path.join(OUT, "chapter", f"Ch{num:02d}_Book.docx"), IMG)
-    build_deck(ch, os.path.join(OUT, "slides", f"Ch{num:02d}_Slides.pptx"), IMG)
-    mod.build_xlsx(os.path.join(OUT, "excel", ch["app"]["file"]))
+    if "--doc" not in sys.argv:
+        if ch.get("source"):
+            pass  # chapters 1-9: original decks are edited in place by edits/decks_1_9.py
+        else:
+            build_deck(ch, os.path.join(OUT, "slides", f"Ch{num:02d}_Slides.pptx"), IMG)
+        if mod.build_xlsx:
+            mod.build_xlsx(os.path.join(OUT, "excel", ch["app"]["file"]))
     print("built chapter", num, "-", len(ch["sections"]), "sections")
 
 
 if __name__ == "__main__":
-    for a in sys.argv[1:] or ["10"]:
+    nums = [a for a in sys.argv[1:] if not a.startswith("--")] or ["10"]
+    for a in nums:
         build(int(a))
