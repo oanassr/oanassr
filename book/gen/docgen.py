@@ -172,8 +172,10 @@ class DocBuilder:
                 self.p(_runs("◂ " + q, size=24, body=True), bdr + f'<w:spacing w:after="40" w:line="{LINE}"/><w:jc w:val="start"/>')
         if adv.get("readings"):
             self.p(_runs("قراءات محكّمة للنقد والعرض", bold=True, color=ADV_BAR, size=24), bdr + '<w:keepNext/><w:spacing w:after="40"/>')
+            ltr = bdr.replace("<w:bidi/>", "")
             for r in adv["readings"]:
-                self.p(_runs(r, size=20, body=True), bdr + '<w:spacing w:after="40"/><w:jc w:val="start"/>')
+                self.p(f'<w:r>{_rpr(latin=True, size=20)}<w:t xml:space="preserve">{escape(r)}</w:t></w:r>',
+                       ltr + '<w:spacing w:after="40"/><w:ind w:left="360" w:hanging="360"/><w:jc w:val="left"/>')
         if adv.get("task"):
             self.p(_runs("تكليف الدكتوراه: ", bold=True, color=ADV_BAR, size=24) + _runs(adv["task"], size=24, body=True),
                    bdr + f'<w:spacing w:after="200" w:line="{LINE}"/><w:jc w:val="start"/>')
@@ -323,6 +325,13 @@ def section_to_doc(b, s):
 
 
 def build_doc(ch, out_path, img_dir):
+    if "advanced" not in ch:
+        try:
+            from advanced import ADV
+            if ch["num"] in ADV:
+                ch = dict(ch, advanced=ADV[ch["num"]])
+        except ImportError:
+            pass
     ch = dedupe_english(walk_terms(ch))
     b = DocBuilder(ch)
     n = ch["num"]
@@ -343,7 +352,9 @@ def build_doc(ch, out_path, img_dir):
     if ch.get("advanced", {}).get("outcome"):
         b.lead_para("مخرج إضافي للدكتوراه: ", ch["advanced"]["outcome"], lead_color="6B4E71")
     b.table(["المخرج", "مجال إطار المؤهلات الوطني"],
-            [[f"{ar}: {txt}", nqf_domain(ar)] for ar, en, txt in ch["outcomes"]], [3, 1.3],
+            [[f"{ar}: {txt}", nqf_domain(ar)] for ar, en, txt in ch["outcomes"]]
+            + ([[f"(دكتوراه) {ch['advanced']['outcome']}", nqf_domain(ch['advanced']['outcome'].split()[0])]]
+               if ch.get("advanced", {}).get("outcome") else []), [3, 1.3],
             caption="ارتباط مخرجات الفصل بمجالات إطار المؤهلات الوطني")
 
     b.h1("خريطة الفصل: 4 محاور ومخرج واحد")
