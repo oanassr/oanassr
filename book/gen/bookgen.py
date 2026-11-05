@@ -103,7 +103,8 @@ class Front(DocBuilder):
 
     def cover(self, img):
         par = self.doc.add_paragraph()
-        par.add_run().add_picture(img, width=Inches(8.26), height=Inches(11.68))
+        par.add_run().add_picture(img, width=Inches(8.2677), height=Inches(11.6929))
+        self._float_full_page(par)
         ppr = par._p.get_or_add_pPr()
         ppr.append(parse_xml(f'<w:spacing {W_NS} w:before="0" w:after="0"/>'))
         ppr.append(parse_xml(f'<w:jc {W_NS} w:val="center"/>'))
@@ -111,6 +112,33 @@ class Front(DocBuilder):
         ppr.append(parse_xml(
             f'<w:sectPr {W_NS}><w:pgSz w:w="11906" w:h="16838"/>'
             '<w:pgMar w:top="0" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>'))
+
+    def outlined_h1(self, text):
+        self.p(_runs(text, bold=True, color=TEAL, size=36),
+               '<w:pStyle w:val="BookPart"/><w:pageBreakBefore/><w:bidi/><w:spacing w:after="160" w:before="320"/>')
+
+    @staticmethod
+    def _float_full_page(par):
+        """Turn the inline cover picture into one anchored at the page corner, behind text, so it
+        fills the whole page whatever the section margins or bidi settings are."""
+        from copy import deepcopy
+        WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+        drawing = par._p.find(f".//{W}drawing")
+        inline = drawing[0]
+        ext = inline.find(f"{{{WP}}}extent")
+        cx, cy = ext.get("cx"), ext.get("cy")
+        graphic = inline.find("{http://schemas.openxmlformats.org/drawingml/2006/main}graphic")
+        docpr = inline.find(f"{{{WP}}}docPr")
+        anchor = parse_xml(
+            f'<wp:anchor xmlns:wp="{WP}" distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="0" '
+            'behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/>'
+            '<wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH>'
+            '<wp:positionV relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionV>'
+            f'<wp:extent cx="{cx}" cy="{cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/>'
+            f'<wp:docPr id="{docpr.get("id")}" name="Cover"/><wp:cNvGraphicFramePr/></wp:anchor>')
+        anchor.append(deepcopy(graphic))
+        drawing.remove(inline)
+        drawing.append(anchor)
 
     def table_rows(self, rows, widths, header=None, bold_first=False):
         self.table(header or ["", ""], rows, widths) if header else self._plain_table(rows, widths, bold_first)
@@ -208,10 +236,10 @@ def front_matter(path, titles, toc_pages):
     f._plain_table(rows, [8, 1], False)
 
     # lists of figures and tables (page numbers from the previous PDF pass)
-    f.h1("قائمة الأشكال", page_break=True)
+    f.outlined_h1("قائمة الأشكال")
     f._plain_table([[f"الشكل {n}\u200e-1: {titles[n]}", str(toc_pages.get(("fig", n), "")), {"size": 22}]
                     for n in range(1, N_CH + 1)], [8, 1], False)
-    f.h1("قائمة الجداول", page_break=True)
+    f.outlined_h1("قائمة الجداول")
     caps = toc_pages.get("captions", [])
     f._plain_table([[c, str(pg), {"size": 20}] for c, pg in caps] or [["تُستكمل أرقام الصفحات في التمرير الثاني", "", {}]],
                    [8, 1], False)
@@ -289,13 +317,13 @@ def subject_index(chs, terms):
     secs = []
     for n, ch in chs.items():
         for i, sec in enumerate(ch["sections"], 1):
-            secs.append((f"{n}.{i}", " ".join(_texts(sec, []))))
+            secs.append((f"{n}\u200e-{i}", " ".join(_texts(sec, []))))
     rows = []
     for ar, (en, _) in terms.items():
         hits = [num for num, txt in secs if ar in txt]
         if hits:
             shown = hits[:10]
-            rows.append([ar, en, "، ".join(shown) + (" ..." if len(hits) > 10 else "")])
+            rows.append([ar, en, "  ·  ".join(shown) + ("  ·  …" if len(hits) > 10 else "")])
     return sorted(rows, key=lambda r: ar_key(r[0]))
 
 
@@ -329,7 +357,7 @@ def appendices(doc, terms, refs, chs):
             '<w:bidi/><w:spacing w:after="100"/><w:ind w:hanging="360" w:right="360"/><w:jc w:val="start"/>')
 
     _appendix_title(b, APPENDICES[2])
-    b.para("يحيل الفهرس كل مصطلح إلى أرقام الأقسام التي ورد فيها (رقم الفصل ثم رقم القسم)، فيمكن الوصول إليه من رأس القسم في الفصل. ويُكتفى بأول عشرة مواضع للمصطلحات الشائعة.")
+    b.para("يحيل الفهرس كل مصطلح إلى الأقسام التي ورد فيها بصيغة «رقم الفصل-رقم القسم»؛ فالموضع 5-10 هو القسم العاشر من الفصل الخامس. ويُكتفى بأول عشرة مواضع للمصطلحات الشائعة.")
     b.table(["الموضوع", "المقابل الإنجليزي", "الأقسام"], subject_index(chs, terms), [2.6, 2.6, 2.4])
 
     _appendix_title(b, APPENDICES[3])
